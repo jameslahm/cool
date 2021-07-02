@@ -5,10 +5,16 @@
 #include <stdarg.h>
 #include "semant.h"
 #include "utilities.h"
+#include <map>
 
 
 extern int semant_debug;
 extern char *curr_filename;
+
+std::map<Symbol, Class_> class_map;
+typedef std::pair<Symbol,Symbol> method_id;
+std::map<method_id, method_class> method_env;
+
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -83,11 +89,62 @@ static void initialize_constants(void)
 
 
 
+
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
+    install_basic_classes();
+
+    // check acyclic
+    for(int i=classes->first();classes->more(i);i=classes->next(i)){
+        Class_ cls = classes->nth(i);
+        Symbol name = cls->get_name();
+        if(class_map.find(name)!=class_map.end()){
+            semant_error() << "Redefinition of class " << name<< "."<<endl;
+            return; 
+        }
+
+        if(name==SELF_TYPE){
+            semant_error() << "Redifinition of basic class SELF_TYPE." << endl;
+            return;
+        }
+
+        class_map.insert(std::make_pair(name,cls));
+    }
+
+    if(class_map.find(Main)==class_map.end()){
+        semant_error() << "Class Main is not defined." <<endl;
+        return;
+    }
+
+    for(int i=classes->first();classes->more(i);i=classes->next(i)){
+        Class_ cls = classes->nth(i);
+        Symbol start_cls_name = cls->get_name();
+
+        for(Symbol parent = cls->get_parent();parent!=Object;
+            cls = class_map[parent],parent = cls->get_parent()){
+            
+            if(class_map.find(parent)==class_map.end()){
+                semant_error() << "Parent class "<<parent << " is not defined."<<endl;
+                return;
+            }
+
+            if(parent== Int || parent == Bool || parent == Str || parent==SELF_TYPE){
+                semant_error() << "Classes cannot inherit from basic class " << parent<<endl;
+                return;
+            }
+
+            if (parent==start_cls_name){
+                semant_error() << "An inheritance cyncle has been detected " << parent<<endl;
+                return;
+            }
+            }
+        
+        
+    }
 
 }
+
 
 void ClassTable::install_basic_classes() {
 
@@ -122,6 +179,7 @@ void ClassTable::install_basic_classes() {
 					       single_Features(method(type_name, nil_Formals(), Str, no_expr()))),
 			       single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))),
 	       filename);
+
 
     // 
     // The IO class inherits from Object. Its methods are
@@ -188,6 +246,11 @@ void ClassTable::install_basic_classes() {
 						      Str, 
 						      no_expr()))),
 	       filename);
+    class_map.insert(std::make_pair(Object,Object_class));
+    class_map.insert(std::make_pair(IO, IO_class));
+    class_map.insert(std::make_pair(Int, Int_class));
+    class_map.insert(std::make_pair(Bool, Bool_class));
+    class_map.insert(std::make_pair(Str, Str_class));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -222,6 +285,20 @@ ostream& ClassTable::semant_error()
     return error_stream;
 } 
 
+void build_method_env(){
+    for(auto iter = class_map.begin();iter!=class_map.end();iter++){
+        auto cls = iter->second;
+        auto features = cls->get_features();
+        for(int i=features->first();features->more(i);i=features->next(i)){
+            auto feature = features->nth(i);
+            method_class* method = dynamic_cast<method_class*>(feature);
+            if(!method){
+                continue;
+            }
+            method_env[std::make_pair(cls->get_name(),method->get_name())] = method;
+        }
+    }
+}
 
 
 /*   This is the entry point to the semantic checker.
@@ -250,6 +327,10 @@ void program_class::semant()
 	cerr << "Compilation halted due to static semantic errors." << endl;
 	exit(1);
     }
+
+    build_method_env();
+
+    check();
 }
 
 
