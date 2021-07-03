@@ -720,8 +720,71 @@ Symbol block_class::typecheck(type_env& tenv){
 }
 
 Symbol let_class::typecheck(type_env& tenv){
-    
+    Symbol t0 = type_decl;
+    Symbol t1 = init->typecheck(tenv);
+
+    if(t1!=No_type && !is_subclass(t1,t0,tenv)){
+        classtable->semant_error(tenv.c->get_filename(),this)<<
+            "Inferred type "<<t1 << " of initialization of " << identifier
+            <<"does not conform to identifier's declared type"<<endl;
+    }
+    tenv.o.enterscope();
+    if(identifier!=self){
+        tenv.o.addid(identifier,new Symbol(t0));
+    } else {
+        classtable->semant_error(tenv.c->get_filename(),this) <<
+        "'self' cannot be bound in a 'let' expression"<<endl;
+    }
+
+    type = body->typecheck(tenv);
+    tenv.o.exitscope();
+    return type;
 }
+
+Symbol plus_class::typecheck(type_env& tenv){
+    Symbol t0 = e1->typecheck(tenv);
+    Symbol t1 = e1->typecheck(tenv);
+
+    if(t0 != Int || t1 != Int) {
+        classtable->semant_error(tenv.c->get_filename(),this) <<
+        "Non-Int arguments: "<< t0 << " + "<<t1 <<endl;
+        type = No_type;
+    } else {
+        type = Int;
+    }
+    return type;
+}
+
+Symbol sub_class::typecheck(type_env& tenv){
+    Symbol t0 = e1->typecheck(tenv);
+    Symbol t1 = e2->typecheck(tenv);
+    if(t0!=Int || t1!=Int) {
+        classtable->semant_error(tenv.c->get_filename(),this)<<
+        "Non-Int arguments: "<<t0<<" - "<<t1 <<endl;
+        type = No_type;
+    } else {
+        type = Int;
+    }
+    return type;
+}
+
+Symbol mul_class::typecheck(type_env& tenv){
+    Symbol t0 = e1->typecheck(tenv);
+    Symbol t1 = e2->typecheck(tenv);
+    if(t0!=Int || t1!=Int) {
+        classtable->semant_error(tenv.c->get_filename(),this)<<
+        "Non-Int arguments: "<<t0 << " * "<<t1 << endl;
+        type = No_type;
+    } else {
+        type = Int;
+    }
+    return type;
+}
+
+
+
+
+
 
 Symbol method_class::typecheck(type_env &tenv)
 {
