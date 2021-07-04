@@ -1,230 +1,387 @@
-16c16
+1,383c1,2
+< 
+< _program
+< 
+<   _class
+<     List
+<     Object
+<     filename
+<     (
+< 
+<     _method
+<       isNil
+<       Bool
+< 
+<       _bool
+<         1
 <       : Bool
----
->       : _no_type
-28c28
+< 
+<     _method
+<       head
+<       Int
+< 
+<       _block
+< 
+<         _dispatch
+< 
+<           _object
+<             self
 <           : SELF_TYPE
----
->           : _no_type
-32c32
+<           abort
+<           (
+<           )
 <         : Object
----
->         : _no_type
-36,37c36,37
+< 
+<         _int
+<           0
 <         : Int
 <       : Int
----
->         : _no_type
->       : _no_type
-49c49
+< 
+<     _method
+<       tail
+<       List
+< 
+<       _block
+< 
+<         _dispatch
+< 
+<           _object
+<             self
 <           : SELF_TYPE
----
->           : _no_type
-53c53
+<           abort
+<           (
+<           )
 <         : Object
----
->         : _no_type
-57,58c57,58
+< 
+<         _object
+<           self
 <         : SELF_TYPE
 <       : SELF_TYPE
----
->         : _no_type
->       : _no_type
-72c72
+< 
+<     _method
+<       cons
+< 
+<       _formal
+<         i
+<         Int
+<       List
+< 
+<       _dispatch
+< 
+<         _new
+<           Cons
 <         : Cons
----
->         : _no_type
-78c78
+<         init
+<         (
+< 
+<         _object
+<           i
 <         : Int
----
->         : _no_type
-82c82
+< 
+<         _object
+<           self
 <         : SELF_TYPE
----
->         : _no_type
-84c84
+<         )
 <       : List
----
->       : _no_type
-113c113
+<     )
+< 
+<   _class
+<     Cons
+<     List
+<     filename
+<     (
+< 
+<     _attr
+<       car
+<       Int
+< 
+<       _no_expr
+<       : _no_type
+< 
+<     _attr
+<       cdr
+<       List
+< 
+<       _no_expr
+<       : _no_type
+< 
+<     _method
+<       isNil
+<       Bool
+< 
+<       _bool
+<         0
 <       : Bool
----
->       : _no_type
-121c121
+< 
+<     _method
+<       head
+<       Int
+< 
+<       _object
+<         car
 <       : Int
----
->       : _no_type
-129c129
+< 
+<     _method
+<       tail
+<       List
+< 
+<       _object
+<         cdr
 <       : List
----
->       : _no_type
-150,151c150,151
+< 
+<     _method
+<       init
+< 
+<       _formal
+<         i
+<         Int
+< 
+<       _formal
+<         rest
+<         List
+<       List
+< 
+<       _block
+< 
+<         _assign
+<           car
+< 
+<           _object
+<             i
 <           : Int
 <         : Int
----
->           : _no_type
->         : _no_type
-158,159c158,159
+< 
+<         _assign
+<           cdr
+< 
+<           _object
+<             rest
 <           : List
 <         : List
----
->           : _no_type
->         : _no_type
-163,164c163,164
+< 
+<         _object
+<           self
 <         : SELF_TYPE
 <       : SELF_TYPE
----
->         : _no_type
->       : _no_type
-194c194
+<     )
+< 
+<   _class
+<     Main
+<     IO
+<     filename
+<     (
+< 
+<     _attr
+<       mylist
+<       List
+< 
+<       _no_expr
+<       : _no_type
+< 
+<     _method
+<       print_list
+< 
+<       _formal
+<         l
+<         List
+<       Object
+< 
+<       _cond
+< 
+<         _dispatch
+< 
+<           _object
+<             l
 <           : List
----
->           : _no_type
-198c198
+<           isNil
+<           (
+<           )
 <         : Bool
----
->         : _no_type
-204c204
+< 
+<         _dispatch
+< 
+<           _object
+<             self
 <           : SELF_TYPE
----
->           : _no_type
-210c210
+<           out_string
+<           (
+< 
+<           _string
+<             "\n"
 <           : String
----
->           : _no_type
-212c212
+<           )
 <         : SELF_TYPE
----
->         : _no_type
-220c220
+< 
+<         _block
+< 
+<           _dispatch
+< 
+<             _object
+<               self
 <             : SELF_TYPE
----
->             : _no_type
-228c228
+<             out_int
+<             (
+< 
+<             _dispatch
+< 
+<               _object
+<                 l
 <               : List
----
->               : _no_type
-232c232
+<               head
+<               (
+<               )
 <             : Int
----
->             : _no_type
-234c234
+<             )
 <           : SELF_TYPE
----
->           : _no_type
-240c240
+< 
+<           _dispatch
+< 
+<             _object
+<               self
 <             : SELF_TYPE
----
->             : _no_type
-246c246
+<             out_string
+<             (
+< 
+<             _string
+<               " "
 <             : String
----
->             : _no_type
-248c248
+<             )
 <           : SELF_TYPE
----
->           : _no_type
-254c254
+< 
+<           _dispatch
+< 
+<             _object
+<               self
 <             : SELF_TYPE
----
->             : _no_type
-262c262
+<             print_list
+<             (
+< 
+<             _dispatch
+< 
+<               _object
+<                 l
 <               : List
----
->               : _no_type
-266c266
+<               tail
+<               (
+<               )
 <             : List
----
->             : _no_type
-268,270c268,270
+<             )
 <           : Object
 <         : Object
 <       : Object
----
->           : _no_type
->         : _no_type
->       : _no_type
-293c293
+< 
+<     _method
+<       main
+<       Object
+< 
+<       _block
+< 
+<         _assign
+<           mylist
+< 
+<           _dispatch
+< 
+<             _dispatch
+< 
+<               _dispatch
+< 
+<                 _dispatch
+< 
+<                   _dispatch
+< 
+<                     _new
+<                       List
 <                     : List
----
->                     : _no_type
-299c299
+<                     cons
+<                     (
+< 
+<                     _int
+<                       1
 <                     : Int
----
->                     : _no_type
-301c301
+<                     )
 <                   : List
----
->                   : _no_type
-307c307
+<                   cons
+<                   (
+< 
+<                   _int
+<                     2
 <                   : Int
----
->                   : _no_type
-309c309
+<                   )
 <                 : List
----
->                 : _no_type
-315c315
+<                 cons
+<                 (
+< 
+<                 _int
+<                   3
 <                 : Int
----
->                 : _no_type
-317c317
+<                 )
 <               : List
----
->               : _no_type
-323c323
+<               cons
+<               (
+< 
+<               _int
+<                 4
 <               : Int
----
->               : _no_type
-325c325
+<               )
 <             : List
----
->             : _no_type
-331c331
+<             cons
+<             (
+< 
+<             _int
+<               5
 <             : Int
----
->             : _no_type
-333,334c333,334
+<             )
 <           : List
 <         : List
----
->           : _no_type
->         : _no_type
-344c344
+< 
+<         _loop
+< 
+<           _comp
+< 
+<             _dispatch
+< 
+<               _object
+<                 mylist
 <               : List
----
->               : _no_type
-348,349c348,349
+<               isNil
+<               (
+<               )
 <             : Bool
 <           : Bool
----
->             : _no_type
->           : _no_type
-357c357
+< 
+<           _block
+< 
+<             _dispatch
+< 
+<               _object
+<                 self
 <               : SELF_TYPE
----
->               : _no_type
-363c363
+<               print_list
+<               (
+< 
+<               _object
+<                 mylist
 <               : List
----
->               : _no_type
-365c365
+<               )
 <             : Object
----
->             : _no_type
-374c374
+< 
+<             _assign
+<               mylist
+< 
+<               _dispatch
+< 
+<                 _object
+<                   mylist
 <                 : List
----
->                 : _no_type
-378,382c378,382
+<                 tail
+<                 (
+<                 )
 <               : List
 <             : List
 <           : List
 <         : Object
 <       : Object
+<     )
 ---
->               : _no_type
->             : _no_type
->           : _no_type
->         : _no_type
->       : _no_type
+> filename:line
+> Compilation halted due to static semantic errors.

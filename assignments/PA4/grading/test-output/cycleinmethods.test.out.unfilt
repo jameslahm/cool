@@ -1,90 +1,10 @@
-#1
-_program
-  #1
-  _class
-    Main
-    Object
-    "./cycleinmethods.test"
-    (
-    #1
-    _method
-      main
-      Int
-      #1
-      _int
-        0
-      : _no_type
-    )
-  #3
-  _class
-    A
-    Object
-    "./cycleinmethods.test"
-    (
-    #4
-    _method
-      f
-      #4
-      _formal
-        a
-        Int
-      Int
-      #4
-      _dispatch
-        #4
-        _object
-          self
-        : _no_type
-        g
-        (
-        #4
-        _int
-          0
-        : _no_type
-        )
-      : _no_type
-    #5
-    _method
-      g
-      #5
-      _formal
-        a
-        Int
-      Int
-      #5
-      _dispatch
-        #5
-        _object
-          self
-        : _no_type
-        h
-        (
-        #5
-        _int
-          0
-        : _no_type
-        )
-      : _no_type
-    #6
-    _method
-      h
-      #6
-      _formal
-        a
-        Int
-      Int
-      #6
-      _dispatch
-        #6
-        _object
-          self
-        : _no_type
-        f
-        (
-        #6
-        _int
-          0
-        : _no_type
-        )
-      : _no_type
-    )
+./cycleinmethods.test:4: Expression typeAdoes not conform to declared static dispatch type type_name.
+./cycleinmethods.test:4: Dispatch to undefined methodg.
+./cycleinmethods.test:4: Inferred return type Object of method init does not conform to declared return typeInt.
+./cycleinmethods.test:5: Expression typeAdoes not conform to declared static dispatch type type_name.
+./cycleinmethods.test:5: Dispatch to undefined methodh.
+./cycleinmethods.test:5: Inferred return type Object of method init does not conform to declared return typeInt.
+./cycleinmethods.test:6: Expression typeAdoes not conform to declared static dispatch type type_name.
+./cycleinmethods.test:6: Dispatch to undefined methodf.
+./cycleinmethods.test:6: Inferred return type Object of method init does not conform to declared return typeInt.
+Compilation halted due to static semantic errors

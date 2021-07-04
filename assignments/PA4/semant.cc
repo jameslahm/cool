@@ -6,7 +6,6 @@
 #include "utilities.h"
 #include <map>
 #include <algorithm>
-using namespace std;
 
 extern int semant_debug;
 extern char *curr_filename;
@@ -344,7 +343,7 @@ void build_initial_obj_env(type_env tenv)
         }
         else
         {
-            tenv.o.addid(attribute->get_name(), new Symbol(attribute->get_type_decl()));
+            cout << attribute->get_name() <<endl;
         }
     }
     tenv.o.addid(self, new Symbol(SELF_TYPE));
@@ -361,7 +360,7 @@ void class__class::check()
     Features features = tenv.c->get_features();
     for (int i = features->first(); features->more(i); i = features->next(i))
     {
-        features->nth(i)->typecheck(tenv);
+       features->nth(i)->typecheck(tenv);
     }
     tenv.o.exitscope();
 }
@@ -444,6 +443,11 @@ Symbol attr_class::typecheck(type_env &tenv)
     return t0;
 }
 
+Symbol int_const_class::typecheck(type_env& tenv){
+    type = Int;
+    return type;
+}
+
 Symbol string_const_class::typecheck(type_env &tenv)
 {
     type = Str;
@@ -510,9 +514,10 @@ Symbol assign_class::typecheck(type_env &tenv)
     }
 
     Symbol *t = tenv.o.lookup(name);
+    cout << t <<endl;
     if (!t)
     {
-        classtable->semant_error(tenv.c->get_filename(), this) << "Assignment to undeclarade variable" << name << "." << endl;
+        classtable->semant_error(tenv.c->get_filename(), this) << "Assignment to undeclarade variable " << name << "." << endl;
         return type;
     }
     Symbol t_ = expr->typecheck(tenv);
@@ -687,7 +692,7 @@ Symbol loop_class::typecheck(type_env& tenv){
 
 Symbol typcase_class::typecheck(type_env& tenv){
     Symbol t0 = expr->typecheck(tenv);
-    vector<Symbol> used;
+    std::vector<Symbol> used;
 
     for(int i=cases->first();cases->more(i);i=cases->next(i)){
         Symbol prev_type = type;
@@ -781,6 +786,85 @@ Symbol mul_class::typecheck(type_env& tenv){
     return type;
 }
 
+Symbol divide_class::typecheck(type_env& tenv){
+    Symbol t0 = e1->typecheck(tenv);
+    Symbol t1 = e2->typecheck(tenv);
+    if(t0!=Int || t1!=Int){
+        classtable->semant_error(tenv.c->get_filename(),this)<<
+        "Non-Int arguments: "<<t0 << " / " << t1 <<endl;
+        type = No_type;
+    } else {
+        type = Int;
+    }
+    return type;
+}
+
+Symbol neg_class::typecheck(type_env& tenv){
+    Symbol t0 = e1->typecheck(tenv);
+    if(t0!=Int){
+        classtable->semant_error(tenv.c->get_filename(),this) << 
+        "Argument of ~ has type "<<t0 <<" instead of Int"<<endl;
+        type = No_type;
+    } else {
+        type = Int;
+    }
+    return type;
+}
+
+Symbol lt_class::typecheck(type_env& tenv){
+    Symbol t0  =e1->typecheck(tenv);
+    Symbol t1 = e2->typecheck(tenv);
+
+    if(t0!=Int) {
+        classtable->semant_error(tenv.c->get_filename(),this) << 
+        "Non-Int arguments: "<<t0<< " < "<<t1 <<endl;
+        type = No_type;
+    } else {
+        type = Bool;
+    }
+    return type;
+}
+
+Symbol eq_class::typecheck(type_env& tenv){
+    Symbol t1 = e1->typecheck(tenv);
+    Symbol t2 = e2->typecheck(tenv);
+    if(t1==Int || t1==Str || t1==Bool || t2==Int || t2==Str || t2==Bool){
+        if(t1!=t2){
+            classtable->semant_error(tenv.c->get_filename(),this) <<
+            "Illegal comparison with a basic type"<<endl;
+        }
+    }   
+    type = Bool;
+    return type;
+}
+
+Symbol leq_class::typecheck(type_env& tenv){
+    Symbol t0 = e1->typecheck(tenv);
+    Symbol t1 = e2->typecheck(tenv);
+
+    if(t0!=Int || t1!=Int){
+        classtable->semant_error(tenv.c->get_filename(),this)<<
+        "Non-Int arguments: "<<t1 << " <= "<<t1 <<endl;
+    }
+    type = Bool;
+    return type;
+}
+
+Symbol comp_class::typecheck(type_env& tenv){
+    type = e1->typecheck(tenv);
+    if(type!=Bool){
+        classtable->semant_error(tenv.c->get_filename(),this)<<
+        "Argument of 'not' has type "<<type << " instead of Bool." <<endl;;
+    }
+    type = Bool;
+    return type;
+}
+
+
+
+
+
+
 
 
 
@@ -805,7 +889,7 @@ Symbol method_class::typecheck(type_env &tenv)
 
     bool derived_formals_are_less = false;
 
-    vector<Symbol> defined;
+    std::vector<Symbol> defined;
     int i = 0;
     for (i = formals->first(); formals->more(i); i = formals->next(i))
     {
@@ -908,7 +992,7 @@ void program_class::semant()
     initialize_constants();
 
     /* ClassTable constructor may do some semantic analysis */
-    ClassTable *classtable = new ClassTable(classes);
+    classtable = new ClassTable(classes);
 
     /* some semantic analysis code may go here */
 
@@ -921,4 +1005,9 @@ void program_class::semant()
     build_method_env();
 
     check();
+
+    if(classtable->errors()){
+        cerr << "Compilation halted due to static semantic errors"<<endl;
+        exit(1);
+    }
 }
