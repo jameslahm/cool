@@ -1,10 +1,2 @@
-./staticdispatch.test:3: Undeclared identifier b.
-./staticdispatch.test:3: Expression typeObjectdoes not conform to declared static dispatch type A.
-./staticdispatch.test:3: Undeclared identifier b.
-./staticdispatch.test:3: In call of method foo, typeObject of parameterbdoes not conform to declared typeB.
-./staticdispatch.test:3: Undeclared identifier b.
-./staticdispatch.test:3: In call of method foo, typeObject of parametercdoes not conform to declared typeA.
-./staticdispatch.test:3: Undeclared identifier b.
-./staticdispatch.test:3: In call of method foo, typeObject of parameterddoes not conform to declared typeB.
 ./staticdispatch.test:3: Method foo called with wrong number of parameters
 Compilation halted due to static semantic errors

@@ -1,7 +1,0 @@
-./io.test:5: Expression typeMaindoes not conform to declared static dispatch type type_name.
-./io.test:5: Dispatch to undefined methodout_string.
-./io.test:6: Expression typeMaindoes not conform to declared static dispatch type type_name.
-./io.test:6: Dispatch to undefined methodout_int.
-./io.test:7: Assignment to undeclarade variabley.
-./io.test:8: Assignment to undeclarade variablex.
-Compilation halted due to static semantic errors

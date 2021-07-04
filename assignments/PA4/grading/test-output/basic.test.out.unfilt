@@ -1,9 +1,0 @@
-./basic.test:2: Expression typeIntdoes not conform to declared static dispatch type type_name.
-./basic.test:2: Dispatch to undefined methodcopy.
-./basic.test:2: Expression typeStringdoes not conform to declared static dispatch type type_name.
-./basic.test:2: Dispatch to undefined methodcopy.
-./basic.test:2: Expression typeBooldoes not conform to declared static dispatch type type_name.
-./basic.test:2: Dispatch to undefined methodcopy.
-./basic.test:3: Expression typeStringdoes not conform to declared static dispatch type type_name.
-./basic.test:3: Dispatch to undefined methodlength.
-Compilation halted due to static semantic errors

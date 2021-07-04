@@ -1,8 +1,0 @@
-./methodnameclash.test:3: Undeclared identifier x.
-./methodnameclash.test:3: Inferred return type Object of method init does not conform to declared return typeInt.
-./methodnameclash.test:4: Undeclared identifier y.
-./methodnameclash.test:4: Inferred return type Object of method init does not conform to declared return typeString.
-./methodnameclash.test:6: Expression typeLdoes not conform to declared static dispatch type type_name.
-./methodnameclash.test:6: Dispatch to undefined methodfoo.
-./methodnameclash.test:6: Inferred return type Object of method init does not conform to declared return typeInt.
-Compilation halted due to static semantic errors

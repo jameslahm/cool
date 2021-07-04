@@ -1,7 +1,0 @@
-./stringtest.test:3: Expression typeStringdoes not conform to declared static dispatch type type_name.
-./stringtest.test:3: Dispatch to undefined methodlength.
-./stringtest.test:4: Expression typeStringdoes not conform to declared static dispatch type type_name.
-./stringtest.test:4: Dispatch to undefined methodsubstr.
-./stringtest.test:5: Expression typeStringdoes not conform to declared static dispatch type type_name.
-./stringtest.test:5: Dispatch to undefined methodconcat.
-Compilation halted due to static semantic errors

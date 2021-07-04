@@ -1,9 +1,0 @@
-./classes.test:5: Assignment to undeclarade variablea.
-./classes.test:5: Inferred return type Object of method init does not conform to declared return typeInt.
-./classes.test:11: Undeclared identifier a.
-./classes.test:11: Inferred return type Object of method init does not conform to declared return typeInt.
-./classes.test:12: Assignment to undeclarade variablea.
-./classes.test:12: Inferred return type Object of method init does not conform to declared return typeInt.
-./classes.test:17: Assignment to undeclarade variablea.
-./classes.test:17: Inferred return type Object of method init does not conform to declared return typeInt.
-Compilation halted due to static semantic errors

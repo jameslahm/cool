@@ -1,5 +1,0 @@
-./neg.test:4: Expression typeMaindoes not conform to declared static dispatch type type_name.
-./neg.test:4: Dispatch to undefined methodfoo.
-./neg.test:4: Argument of ~ has type Object instead of Int
-./neg.test:3: Inferred return type _no_type of method init does not conform to declared return typeObject.
-Compilation halted due to static semantic errors

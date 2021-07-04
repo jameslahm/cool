@@ -1,3 +1,0 @@
-./initwithself.test:2: Undeclared identifier self.
-./initwithself.test:2: Inferred type Object of initialization of attributedoes not conform to declared typeMain
-Compilation halted due to static semantic errors

@@ -1,4 +1,0 @@
-./dispatch.test:16: Expression typeBdoes not conform to declared static dispatch type type_name.
-./dispatch.test:16: Dispatch to undefined methodfoo.
-./dispatch.test:14: Inferred return type Object of method init does not conform to declared return typeA.
-Compilation halted due to static semantic errors

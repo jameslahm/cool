@@ -1,4 +1,0 @@
-./subtypemethodreturn.test:5: Expression typeAdoes not conform to declared static dispatch type type_name.
-./subtypemethodreturn.test:5: Dispatch to undefined methodfoo.
-./subtypemethodreturn.test:2: Inferred return type Object of method init does not conform to declared return typeA.
-Compilation halted due to static semantic errors

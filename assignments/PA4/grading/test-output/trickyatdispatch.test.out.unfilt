@@ -1,4 +1,2 @@
-./trickyatdispatch.test:13: Undeclared identifier b.
-./trickyatdispatch.test:13: Expression typeObjectdoes not conform to declared static dispatch type B.
 ./trickyatdispatch.test:13: Method inky called with wrong number of parameters
 Compilation halted due to static semantic errors

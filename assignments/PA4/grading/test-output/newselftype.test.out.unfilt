@@ -1,5 +1,0 @@
-./newselftype.test:3: Undeclared identifier self.
-./newselftype.test:3: Expression typeObjectdoes not conform to declared static dispatch type type_name.
-./newselftype.test:3: Dispatch to undefined methodfoo.
-./newselftype.test:3: Inferred type Object of initialization of attributedoes not conform to declared typeInt
-Compilation halted due to static semantic errors

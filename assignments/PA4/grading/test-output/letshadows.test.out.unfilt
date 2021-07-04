@@ -1,3 +1,0 @@
-./letshadows.test:4: Expression typeStringdoes not conform to declared static dispatch type type_name.
-./letshadows.test:4: Dispatch to undefined methodlength.
-Compilation halted due to static semantic errors

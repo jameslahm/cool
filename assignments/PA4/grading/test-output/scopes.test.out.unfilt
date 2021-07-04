@@ -1,4 +1,0 @@
-./scopes.test:8: Expression typeAdoes not conform to declared static dispatch type type_name.
-./scopes.test:8: Dispatch to undefined methodf.
-./scopes.test:8: Inferred type Object of initialization of xdoes not conform to identifier's declared type
-Compilation halted due to static semantic errors

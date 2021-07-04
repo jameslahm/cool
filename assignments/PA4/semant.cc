@@ -99,13 +99,13 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0), error_stream(cerr)
         Symbol name = cls->get_name();
         if (class_map.find(name) != class_map.end())
         {
-            semant_error() << "Redefinition of class " << name << "." << endl;
+            semant_error(cls) << "Redefinition of class " << name << "." << endl;
             return;
         }
 
         if (name == SELF_TYPE)
         {
-            semant_error() << "Redifinition of basic class SELF_TYPE." << endl;
+            semant_error(cls) << "Redifinition of basic class SELF_TYPE." << endl;
             return;
         }
 
@@ -306,7 +306,9 @@ void build_method_env()
     }
 }
 
-void build_initial_obj_env(type_env tenv)
+Symbol X;
+
+void build_initial_obj_env(type_env &tenv)
 {
     for (auto iter = class_map.find(tenv.c->get_parent()); iter != class_map.end();
          iter = class_map.find(iter->second->get_parent()))
@@ -343,10 +345,14 @@ void build_initial_obj_env(type_env tenv)
         }
         else
         {
-            cout << attribute->get_name() <<endl;
+            if (!X)
+            {
+                X = attribute->get_name();
+            }
+            tenv.o.addid(attribute->get_name(), new Symbol(attribute->get_type_decl()));
         }
     }
-    tenv.o.addid(self, new Symbol(SELF_TYPE));
+    tenv.o.addid(self, &SELF_TYPE);
 }
 
 void class__class::check()
@@ -360,7 +366,7 @@ void class__class::check()
     Features features = tenv.c->get_features();
     for (int i = features->first(); features->more(i); i = features->next(i))
     {
-       features->nth(i)->typecheck(tenv);
+        features->nth(i)->typecheck(tenv);
     }
     tenv.o.exitscope();
 }
@@ -405,8 +411,10 @@ bool cls_is_defined(Symbol type_decl)
 
 bool is_subclass(Symbol sub, Symbol super, type_env &tenv)
 {
-    if(sub==SELF_TYPE){
-        if(super==SELF_TYPE){
+    if (sub == SELF_TYPE)
+    {
+        if (super == SELF_TYPE)
+        {
             return true;
         }
         sub = tenv.c->get_name();
@@ -443,7 +451,8 @@ Symbol attr_class::typecheck(type_env &tenv)
     return t0;
 }
 
-Symbol int_const_class::typecheck(type_env& tenv){
+Symbol int_const_class::typecheck(type_env &tenv)
+{
     type = Int;
     return type;
 }
@@ -514,7 +523,6 @@ Symbol assign_class::typecheck(type_env &tenv)
     }
 
     Symbol *t = tenv.o.lookup(name);
-    cout << t <<endl;
     if (!t)
     {
         classtable->semant_error(tenv.c->get_filename(), this) << "Assignment to undeclarade variable " << name << "." << endl;
@@ -544,8 +552,8 @@ Symbol static_dispatch_class::typecheck(type_env &tenv)
 
     if (!is_subclass(t0, t, tenv))
     {
-        classtable->semant_error(tenv.c->get_filename(), this) << "Expression type" << t0 << "does not conform to declared static "
-                                                                                             "dispatch type "
+        classtable->semant_error(tenv.c->get_filename(), this) << "Expression type " << t0 << " does not conform to declared static "
+                                                                                              "dispatch type "
                                                                << t << "." << endl;
     }
     method_class *method = lookup_method(t, name);
@@ -578,7 +586,7 @@ Symbol static_dispatch_class::typecheck(type_env &tenv)
             formals_are_less = true;
         }
     }
-
+    cout << name << endl;
     if (formals_are_less || formals->more(i))
     {
         classtable->semant_error(tenv.c->get_filename(), this) << "Method " << name << " called with wrong number of parameters" << endl;
@@ -587,6 +595,13 @@ Symbol static_dispatch_class::typecheck(type_env &tenv)
     type = method->get_return_type();
     if (type == SELF_TYPE)
     {
+        if (expr->type == SELF_TYPE)
+        {
+        }
+        else
+        {
+            type = expr->type;
+        }
         return t0;
     }
 
@@ -596,20 +611,20 @@ Symbol static_dispatch_class::typecheck(type_env &tenv)
 Symbol dispatch_class::typecheck(type_env &tenv)
 {
     Symbol t0 = expr->typecheck(tenv);
-    Symbol t = type_name;
+    // Symbol t = type_name;
 
     if (t0 == SELF_TYPE)
     {
         t0 = tenv.c->get_name();
     }
 
-    if (!is_subclass(t0, t, tenv))
-    {
-        classtable->semant_error(tenv.c->get_filename(), this) << "Expression type" << t0 << "does not conform to declared static "
-                                                                                             "dispatch type "
-                                                               << t << "." << endl;
-    }
-    method_class *method = lookup_method(t, name);
+    // if (!is_subclass(t0, t, tenv))
+    // {
+    //     classtable->semant_error(tenv.c->get_filename(), this) << "Expression type " << t0 << " does not conform to declared static "
+    //                                                                                           "dispatch type "
+    //                                                            << t << "." << endl;
+    // }
+    method_class *method = lookup_method(t0, name);
     if (!method)
     {
         classtable->semant_error(tenv.c->get_filename(), this) << "Dispatch to undefined method" << name << "." << endl;
@@ -618,7 +633,7 @@ Symbol dispatch_class::typecheck(type_env &tenv)
     }
 
     Formals formals = method->get_formals();
-    bool formals_are_less;
+    bool formals_are_less = false;
     int i;
     for (i = actual->first(); actual->more(i); i = actual->next(i))
     {
@@ -648,97 +663,120 @@ Symbol dispatch_class::typecheck(type_env &tenv)
     type = method->get_return_type();
     if (type == SELF_TYPE)
     {
+        if (expr->type == SELF_TYPE)
+        {
+        }
+        else
+        {
+            type = expr->type;
+        }
         return t0;
     }
 
     return type;
 }
 
-Symbol cls_join(Symbol a,Symbol b,type_env& tenv){
-    if(a==SELF_TYPE){
+Symbol cls_join(Symbol a, Symbol b, type_env &tenv)
+{
+    if (a == SELF_TYPE)
+    {
         a = tenv.c->get_name();
     }
-    if(b==SELF_TYPE){
+    if (b == SELF_TYPE)
+    {
         b = tenv.c->get_name();
     }
     Class_ cls = class_map[a];
-    for(;!is_subclass(b,cls->get_name(),tenv);cls=class_map[cls->get_parent()]){
-
+    for (; !is_subclass(b, cls->get_name(), tenv); cls = class_map[cls->get_parent()])
+    {
     }
     return cls->get_name();
 }
 
-Symbol cond_class::typecheck(type_env& tenv){
+Symbol cond_class::typecheck(type_env &tenv)
+{
     Symbol t1 = pred->typecheck(tenv);
     Symbol t2 = then_exp->typecheck(tenv);
     Symbol t3 = else_exp->typecheck(tenv);
-    if(t1!=Bool){
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Predicate of 'if' does not have type Bool."<<endl;
+    if (t1 != Bool)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Predicate of 'if' does not have type Bool." << endl;
     }
-    type = cls_join(t2,t3,tenv);
+    type = cls_join(t2, t3, tenv);
     return type;
 }
 
-Symbol loop_class::typecheck(type_env& tenv){
-    if(pred->typecheck(tenv)!=Bool){
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Loop condition does not have type Bool" <<endl;
+Symbol loop_class::typecheck(type_env &tenv)
+{
+    if (pred->typecheck(tenv) != Bool)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Loop condition does not have type Bool" << endl;
     }
     body->typecheck(tenv);
     type = Object;
     return type;
 }
 
-Symbol typcase_class::typecheck(type_env& tenv){
+Symbol typcase_class::typecheck(type_env &tenv)
+{
     Symbol t0 = expr->typecheck(tenv);
     std::vector<Symbol> used;
 
-    for(int i=cases->first();cases->more(i);i=cases->next(i)){
+    for (int i = cases->first(); cases->more(i); i = cases->next(i))
+    {
         Symbol prev_type = type;
         Case c = cases->nth(i);
         Symbol c_type = c->get_type_decl();
-        if(std::find(used.begin(),used.end(),c_type)==used.end()){
+        if (std::find(used.begin(), used.end(), c_type) == used.end())
+        {
             used.push_back(c_type);
-        } else {
-            classtable->semant_error(tenv.c->get_filename(),this)
-            <<"Duplicate branch "<<c_type << " in case statement." <<endl;
-            type  = Object;
+        }
+        else
+        {
+            classtable->semant_error(tenv.c->get_filename(), this)
+                << "Duplicate branch " << c_type << " in case statement." << endl;
+            type = Object;
             return type;
         }
         tenv.o.enterscope();
-        tenv.o.addid(c->get_name(),new Symbol(c_type));
+        tenv.o.addid(c->get_name(), new Symbol(c_type));
         type = c->get_expr()->typecheck(tenv);
-        if(i>0){
-            type = cls_join(type,prev_type,tenv);
+        if (i > 0)
+        {
+            type = cls_join(type, prev_type, tenv);
         }
         tenv.o.exitscope();
     }
     return type;
 }
 
-Symbol block_class::typecheck(type_env& tenv){
-    for(int i=body->first();body->more(i);i = body->next(i)) {
+Symbol block_class::typecheck(type_env &tenv)
+{
+    for (int i = body->first(); body->more(i); i = body->next(i))
+    {
         type = body->nth(i)->typecheck(tenv);
     }
     return type;
 }
 
-Symbol let_class::typecheck(type_env& tenv){
+Symbol let_class::typecheck(type_env &tenv)
+{
     Symbol t0 = type_decl;
     Symbol t1 = init->typecheck(tenv);
 
-    if(t1!=No_type && !is_subclass(t1,t0,tenv)){
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-            "Inferred type "<<t1 << " of initialization of " << identifier
-            <<"does not conform to identifier's declared type"<<endl;
+    if (t1 != No_type && !is_subclass(t1, t0, tenv))
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Inferred type " << t1 << " of initialization of " << identifier
+                                                               << "does not conform to identifier's declared type" << endl;
     }
     tenv.o.enterscope();
-    if(identifier!=self){
-        tenv.o.addid(identifier,new Symbol(t0));
-    } else {
-        classtable->semant_error(tenv.c->get_filename(),this) <<
-        "'self' cannot be bound in a 'let' expression"<<endl;
+    if (identifier != self)
+    {
+        tenv.o.addid(identifier, new Symbol(t0));
+    }
+    else
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "'self' cannot be bound in a 'let' expression" << endl;
     }
 
     type = body->typecheck(tenv);
@@ -746,129 +784,142 @@ Symbol let_class::typecheck(type_env& tenv){
     return type;
 }
 
-Symbol plus_class::typecheck(type_env& tenv){
-    Symbol t0 = e1->typecheck(tenv);
-    Symbol t1 = e1->typecheck(tenv);
-
-    if(t0 != Int || t1 != Int) {
-        classtable->semant_error(tenv.c->get_filename(),this) <<
-        "Non-Int arguments: "<< t0 << " + "<<t1 <<endl;
-        type = No_type;
-    } else {
-        type = Int;
-    }
-    return type;
-}
-
-Symbol sub_class::typecheck(type_env& tenv){
+Symbol plus_class::typecheck(type_env &tenv)
+{
     Symbol t0 = e1->typecheck(tenv);
     Symbol t1 = e2->typecheck(tenv);
-    if(t0!=Int || t1!=Int) {
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Non-Int arguments: "<<t0<<" - "<<t1 <<endl;
+
+    if (t0 != Int || t1 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Non-Int arguments: " << t0 << " + " << t1 << endl;
         type = No_type;
-    } else {
+    }
+    else
+    {
         type = Int;
     }
     return type;
 }
 
-Symbol mul_class::typecheck(type_env& tenv){
+Symbol sub_class::typecheck(type_env &tenv)
+{
     Symbol t0 = e1->typecheck(tenv);
     Symbol t1 = e2->typecheck(tenv);
-    if(t0!=Int || t1!=Int) {
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Non-Int arguments: "<<t0 << " * "<<t1 << endl;
+    if (t0 != Int || t1 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Non-Int arguments: " << t0 << " - " << t1 << endl;
         type = No_type;
-    } else {
+    }
+    else
+    {
         type = Int;
     }
     return type;
 }
 
-Symbol divide_class::typecheck(type_env& tenv){
+Symbol mul_class::typecheck(type_env &tenv)
+{
     Symbol t0 = e1->typecheck(tenv);
     Symbol t1 = e2->typecheck(tenv);
-    if(t0!=Int || t1!=Int){
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Non-Int arguments: "<<t0 << " / " << t1 <<endl;
+    if (t0 != Int || t1 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Non-Int arguments: " << t0 << " * " << t1 << endl;
         type = No_type;
-    } else {
+    }
+    else
+    {
         type = Int;
     }
     return type;
 }
 
-Symbol neg_class::typecheck(type_env& tenv){
+Symbol divide_class::typecheck(type_env &tenv)
+{
     Symbol t0 = e1->typecheck(tenv);
-    if(t0!=Int){
-        classtable->semant_error(tenv.c->get_filename(),this) << 
-        "Argument of ~ has type "<<t0 <<" instead of Int"<<endl;
+    Symbol t1 = e2->typecheck(tenv);
+    if (t0 != Int || t1 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Non-Int arguments: " << t0 << " / " << t1 << endl;
         type = No_type;
-    } else {
+    }
+    else
+    {
         type = Int;
     }
     return type;
 }
 
-Symbol lt_class::typecheck(type_env& tenv){
-    Symbol t0  =e1->typecheck(tenv);
+Symbol neg_class::typecheck(type_env &tenv)
+{
+    Symbol t0 = e1->typecheck(tenv);
+    if (t0 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Argument of ~ has type " << t0 << " instead of Int" << endl;
+        type = No_type;
+    }
+    else
+    {
+        type = Int;
+    }
+    return type;
+}
+
+Symbol lt_class::typecheck(type_env &tenv)
+{
+    Symbol t0 = e1->typecheck(tenv);
     Symbol t1 = e2->typecheck(tenv);
 
-    if(t0!=Int) {
-        classtable->semant_error(tenv.c->get_filename(),this) << 
-        "Non-Int arguments: "<<t0<< " < "<<t1 <<endl;
+    if (t0 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Non-Int arguments: " << t0 << " < " << t1 << endl;
         type = No_type;
-    } else {
+    }
+    else
+    {
         type = Bool;
     }
     return type;
 }
 
-Symbol eq_class::typecheck(type_env& tenv){
+Symbol eq_class::typecheck(type_env &tenv)
+{
     Symbol t1 = e1->typecheck(tenv);
     Symbol t2 = e2->typecheck(tenv);
-    if(t1==Int || t1==Str || t1==Bool || t2==Int || t2==Str || t2==Bool){
-        if(t1!=t2){
-            classtable->semant_error(tenv.c->get_filename(),this) <<
-            "Illegal comparison with a basic type"<<endl;
+    if (t1 == Int || t1 == Str || t1 == Bool || t2 == Int || t2 == Str || t2 == Bool)
+    {
+        if (t1 != t2)
+        {
+            classtable->semant_error(tenv.c->get_filename(), this) << "Illegal comparison with a basic type" << endl;
         }
-    }   
+    }
     type = Bool;
     return type;
 }
 
-Symbol leq_class::typecheck(type_env& tenv){
+Symbol leq_class::typecheck(type_env &tenv)
+{
     Symbol t0 = e1->typecheck(tenv);
     Symbol t1 = e2->typecheck(tenv);
 
-    if(t0!=Int || t1!=Int){
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Non-Int arguments: "<<t1 << " <= "<<t1 <<endl;
+    if (t0 != Int || t1 != Int)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Non-Int arguments: " << t1 << " <= " << t1 << endl;
     }
     type = Bool;
     return type;
 }
 
-Symbol comp_class::typecheck(type_env& tenv){
+Symbol comp_class::typecheck(type_env &tenv)
+{
     type = e1->typecheck(tenv);
-    if(type!=Bool){
-        classtable->semant_error(tenv.c->get_filename(),this)<<
-        "Argument of 'not' has type "<<type << " instead of Bool." <<endl;;
+    if (type != Bool)
+    {
+        classtable->semant_error(tenv.c->get_filename(), this) << "Argument of 'not' has type " << type << " instead of Bool." << endl;
+        ;
     }
     type = Bool;
     return type;
 }
-
-
-
-
-
-
-
-
-
-
 
 Symbol method_class::typecheck(type_env &tenv)
 {
@@ -952,7 +1003,6 @@ Symbol method_class::typecheck(type_env &tenv)
         classtable->semant_error(tenv.c->get_filename(), this) << "Incompatible number of formal parameters in redefined method"
                                                                << name << "." << endl;
     }
-
     Symbol t0_ = expr->typecheck(tenv);
     tenv.o.exitscope();
 
@@ -1006,8 +1056,9 @@ void program_class::semant()
 
     check();
 
-    if(classtable->errors()){
-        cerr << "Compilation halted due to static semantic errors"<<endl;
+    if (classtable->errors())
+    {
+        cerr << "Compilation halted due to static semantic errors" << endl;
         exit(1);
     }
 }

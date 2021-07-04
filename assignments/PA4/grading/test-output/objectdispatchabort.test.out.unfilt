@@ -1,3 +1,0 @@
-./objectdispatchabort.test:3: Expression typeObjectdoes not conform to declared static dispatch type type_name.
-./objectdispatchabort.test:3: Dispatch to undefined methodabort.
-Compilation halted due to static semantic errors
