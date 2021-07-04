@@ -122,26 +122,25 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0), error_stream(cerr)
     {
         Class_ cls = classes->nth(i);
         Symbol start_cls_name = cls->get_name();
-
         for (Symbol parent = cls->get_parent(); parent != Object;
              cls = class_map[parent], parent = cls->get_parent())
         {
 
             if (class_map.find(parent) == class_map.end())
             {
-                semant_error() << "Parent class " << parent << " is not defined." << endl;
+                semant_error(cls) << "Parent class " << parent << " is not defined." << endl;
                 return;
             }
 
             if (parent == Int || parent == Bool || parent == Str || parent == SELF_TYPE)
             {
-                semant_error() << "Classes cannot inherit from basic class " << parent << endl;
+                semant_error(cls) << "Classes cannot inherit from basic class " << parent << endl;
                 return;
             }
 
             if (parent == start_cls_name)
             {
-                semant_error() << "An inheritance cyncle has been detected " << parent << endl;
+                semant_error(cls) << "An inheritance cyncle has been detected " << parent << endl;
                 return;
             }
         }
@@ -565,7 +564,7 @@ Symbol static_dispatch_class::typecheck(type_env &tenv)
     }
 
     Formals formals = method->get_formals();
-    bool formals_are_less;
+    bool formals_are_less = false;
     int i;
     for (i = actual->first(); actual->more(i); i = actual->next(i))
     {
@@ -586,7 +585,6 @@ Symbol static_dispatch_class::typecheck(type_env &tenv)
             formals_are_less = true;
         }
     }
-    cout << name << endl;
     if (formals_are_less || formals->more(i))
     {
         classtable->semant_error(tenv.c->get_filename(), this) << "Method " << name << " called with wrong number of parameters" << endl;

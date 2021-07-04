@@ -1,4 +1,0 @@
-1c1
-< filename:line
----
-> Classes cannot inherit from basic class String

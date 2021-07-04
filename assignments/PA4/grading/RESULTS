@@ -1,7 +1,1 @@
-	-1 (hairyscary)	 Messy legal Cool program
-	-1 (inheritsbool)	 Class inherits Bool (illegal)
-	-1 (inheritsselftype)	 Class inherits SELF_TYPE (illegal)
-	-1 (inheritsstring)	 Class inherits String (illegal)
-	-1 (missingclass)	 Inheritance from an undefined class
-	-1 (staticdispatch)	 Simple static dispatch
-	-1 (trickyatdispatch)	 Tricky (legal) static dispatch
+	(our tests)	Passed all tests -- congratulations!
