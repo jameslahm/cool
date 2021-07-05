@@ -42,6 +42,9 @@ private:
    void code_dispatch_tables();
    void code_prototypes();
 
+   void code_initializer();
+   void code_methods();
+
    // The following creates an inheritance graph from
    // a list of classes.  The graph is implemented as
    // a tree of `CgenNode', and class names are placed
@@ -89,3 +92,55 @@ public:
    void code_def(ostream &, int boolclasstag);
    void code_ref(ostream &) const;
 };
+
+class Environment
+{
+   Class_ cls;
+   std::vector<attr_class *> cls_attrs;
+   std::vector<Formal> mth_args;
+   std::vector<Symbol> stack_symbols;
+
+public:
+   Class_ get_cls()
+   {
+      return cls;
+   }
+   void set_cls(Class_ cls)
+   {
+      this->cls = cls;
+   }
+
+   int get_cls_attrs_size()
+   {
+      return cls_attrs.size();
+   }
+
+   int get_mth_args_size()
+   {
+      return mth_args.size();
+   }
+
+   void add_cls_attr(attr_class *attr)
+   {
+      cls_attrs.push_back(attr);
+   }
+
+   void add_mth_arg(Formal formal)
+   {
+      mth_args.push_back(formal);
+   }
+
+   void clear_mth_args()
+   {
+      mth_args.clear();
+   }
+
+   void push_stack_symbol(Symbol name)
+   {
+      stack_symbols.push_back(name);
+   }
+   void pop_stack_symbol()
+   {
+      stack_symbols.pop_back();
+   }
+}

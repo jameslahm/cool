@@ -1068,6 +1068,25 @@ void CgenClassTable::code_prototypes()
   }
 }
 
+void CgenClassTable::code_initializer(){
+  for(int i=0;i<cls_ordered.size();i++){
+    Class_ cls = cls_ordered[i];
+    str << cls->get_name() << CLASSINIT_SUFFIX << LABEL;
+    emit_addiu(SP,SP,-12,str);
+    emit_store(FP,3,SP,str);
+    emit_store(SELF,2,SP,str);
+    emit_store(RA,1,SP,str);
+    emit_addiu(FP,SP,4,str);
+    emit_move(SELF,ACC,str);
+
+    if(cls->get_name()!=Object){
+      str << "\tjal " << cls->get_parent() << CLASSINIT_SUFFIX << endl;
+    }
+
+
+  }
+}
+
 void CgenClassTable::code()
 {
   if (cgen_debug)
@@ -1102,6 +1121,8 @@ void CgenClassTable::code()
   //                   - object initializer
   //                   - the class methods
   //                   - etc...
+  code_initializers();
+  code_methods();
 }
 
 CgenNodeP CgenClassTable::root()
