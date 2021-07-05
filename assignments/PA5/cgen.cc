@@ -923,8 +923,149 @@ void CgenNode::set_parentnd(CgenNodeP p)
   parentnd = p;
 }
 
-void CgenClassTable::code_class_name_tab(){
-  
+void CgenClassTable::code_class_name_tab()
+{
+  str << CLASSNAMETAB << LABEL;
+  for (auto it = cls_ordered.begin(); it != cls_ordered.end(); it++)
+  {
+    str << WORD;
+    stringtable.lookup_string((*it)->get_name()->get_string())->code_ref(str);
+    str << endl;
+  }
+}
+
+void CgenClassTable::code_class_parent_tab()
+{
+  str << CLASSPARENTTAB << LABEL;
+  for (auto it = cls_ordered.begin(); it != cls_ordered.end(); it++)
+  {
+    if ((*it)->get_name() == Object)
+    {
+      str << WORD << INVALID_CLASSTAG << endl;
+    }
+    else
+    {
+      str << WORD << get_class_tag((*it)->get_parent()) << endl;
+    }
+  }
+}
+
+void CgenClassTable::code_class_obj_tab()
+{
+  str << CLASSOBJTAB << LABEL;
+  for (auto it = cls_ordered.begin(); it != cls_ordered.end(); it++)
+  {
+    str << WORD << (*it)->get_name() << PROTOBJ_SUFFIX << endl;
+    str << WORD << (*it)->get_name() << CLASSINIT_SUFFIX << endl;
+  }
+}
+
+void get_methods_recursively(Class_ cls, std::vector<std::pair<Class_, method_class *>> all_methods)
+{
+  if (cls->get_name() != Object)
+  {
+    get_methods_recursively(class_map[cls->get_parent()], all_methods);
+  }
+
+  Features features = cls->get_features();
+  for (int i = features->first(); features->more(i); i = features->next(i))
+  {
+    auto feature = features->nth(i);
+    auto method = dynamic_cast<method_class *>(feature);
+    if (!method)
+    {
+      continue;
+    }
+    bool name_already_exist = false;
+    for (auto iter = all_methods.begin(); iter != all_methods.end(); iter++)
+    {
+      if (iter->second->get_name() == method->get_name())
+      {
+        name_already_exist = true;
+        iter->first = cls;
+      }
+    }
+    if (!name_already_exist)
+    {
+      all_methods.push_back(std::make_pair(cls, method));
+    }
+  }
+}
+
+void CgenClassTable::code_dispatch_tables()
+{
+  for (auto iter = cls_ordered.begin(); iter != cls_ordered.end(); iter++)
+  {
+    Class_ cls = *iter;
+    str << cls->get_name() << DISPTAB_SUFFIX << LABEL;
+    get_methods_recursively(cls, cls->all_methods);
+
+    for (auto iter = cls->all_methods.begin(); iter != cls->all_methods.end(); iter++)
+    {
+      str << WORD << (iter->first)->get_name() << "." << (iter->second)->get_name() << endl;
+    }
+  }
+}
+
+void get_class_attrs_recusively(Class_ cls, std::vector<attr_class *> &attrs)
+{
+  if (cls->get_name() != Object)
+  {
+    get_class_attrs_recusively(class_map[cls->get_parent()], attrs);
+  }
+  Features features = cls->get_features();
+  for (int i = features->first(); features->more(i); i = features->next(i))
+  {
+    auto feature = features->nth(i);
+    attr_class *attr = dynamic_cast<attr_class *>(feature);
+    if (!attr)
+    {
+      continue;
+    }
+    else
+    {
+      attrs.push_back(attr);
+    }
+  }
+}
+
+void CgenClassTable::code_prototypes()
+{
+  for (auto iter = cls_ordered.begin(); iter != cls_ordered.end(); iter++)
+  {
+    get_class_attrs_recusively(*iter, (*iter)->all_attrs);
+
+    Class_ cls = *iter;
+
+    str << WORD << "-1" << endl;
+    str << cls->get_name() << PROTOBJ_SUFFIX << LABEL;
+    str << WORD << get_class_tag(cls->get_name()) << endl;
+    str << WORD << DEFAULT_OBJFIELDS + cls->all_attrs.size() << endl;
+    str << WORD << cls->get_name() << DISPTAB_SUFFIX << endl;
+
+    for (auto attr : cls->all_attrs)
+    {
+      Symbol type = attr->get_type_decl();
+      str << WORD;
+      if (type == Int)
+      {
+        inttable.lookup_string("0")->code_ref(str);
+      }
+      else if (type == Bool)
+      {
+        falsebool.code_ref(str);
+      }
+      else if (type == Str)
+      {
+        stringtable.lookup_string("")->code_ref(str);
+      }
+      else
+      {
+        str << "0";
+      }
+      str << endl;
+    }
+  }
 }
 
 void CgenClassTable::code()
