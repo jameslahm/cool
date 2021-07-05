@@ -143,4 +143,16 @@ public:
    {
       stack_symbols.pop_back();
    }
-}
+
+   int get_cls_attr_pos(Symbol name)
+   {
+      for (int i = 0; i < cls_attrs.size(); i++)
+      {
+         if (cls_attrs[i]->get_name() == name)
+         {
+            return i;
+         }
+      }
+      return -1;
+   }
+};

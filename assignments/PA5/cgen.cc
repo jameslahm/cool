@@ -1068,22 +1068,50 @@ void CgenClassTable::code_prototypes()
   }
 }
 
-void CgenClassTable::code_initializer(){
-  for(int i=0;i<cls_ordered.size();i++){
+void CgenClassTable::code_initializer()
+{
+  for (int i = 0; i < cls_ordered.size(); i++)
+  {
     Class_ cls = cls_ordered[i];
     str << cls->get_name() << CLASSINIT_SUFFIX << LABEL;
-    emit_addiu(SP,SP,-12,str);
-    emit_store(FP,3,SP,str);
-    emit_store(SELF,2,SP,str);
-    emit_store(RA,1,SP,str);
-    emit_addiu(FP,SP,4,str);
-    emit_move(SELF,ACC,str);
+    emit_addiu(SP, SP, -12, str);
+    emit_store(FP, 3, SP, str);
+    emit_store(SELF, 2, SP, str);
+    emit_store(RA, 1, SP, str);
+    emit_addiu(FP, SP, 4, str);
+    emit_move(SELF, ACC, str);
 
-    if(cls->get_name()!=Object){
+    if (cls->get_name() != Object)
+    {
       str << "\tjal " << cls->get_parent() << CLASSINIT_SUFFIX << endl;
     }
 
+    Environment env;
+    env.set_cls(cls);
+    for (auto attr : cls->all_attrs)
+    {
+      env.add_cls_attr(attr);
+    }
 
+    Features features = cls->get_features();
+    for (int i = features->first(); features->more(i); i = features->next(i))
+    {
+      attr_class *at = dynamic_cast<attr_class *>(features->nth(i));
+      if (at && !at->get_init()->is_empty())
+      {
+        at->get_init()->code(str, env);
+        emit_store(ACC, DEFAULT_OBJFIELDS + env.get_cls_attr_pos(at->get_name()),
+                   SELF, str);
+      }
+    }
+
+    emit_move(ACC, SELF, str);
+    emit_load(FP, 3, SP, str);
+    emit_load(SELF, 2, SP, str);
+    emit_load(RA, 1, SP, str);
+    emit_addiu(SP, SP, 12, str);
+
+    emit_return(str);
   }
 }
 
@@ -1121,7 +1149,7 @@ void CgenClassTable::code()
   //                   - object initializer
   //                   - the class methods
   //                   - etc...
-  code_initializers();
+  code_initializer();
   code_methods();
 }
 
