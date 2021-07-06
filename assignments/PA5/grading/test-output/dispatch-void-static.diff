@@ -1,0 +1,6 @@
+0a1
+> /usr/class/cs143/bin/../bin/.i686/spim
+5c6
+< Loaded: /usr/class/cs143/cool/lib/trap.handler
+---
+> Loaded: ../lib/trap.handler

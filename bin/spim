@@ -76,6 +76,8 @@ done
 
 xname=$COOL_INST/bin/.$arch/spim
 
+echo $xname
+
 cd $COOL_INST/bin
 
 if [ -x $xname ]; then

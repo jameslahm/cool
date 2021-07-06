@@ -351,5 +351,20 @@ Main_init:
 	lw	$ra 4($sp)
 	addiu	$sp $sp 12
 	jr	$ra	
+Main.main:
+	addiu	$sp $sp -12
+	sw	$fp 12($sp)
+	sw	$s0 8($sp)
+	sw	$ra 4($sp)
+	addiu	$fp $sp 4
+	move	$s0 $a0
+	la	$a0 int_const0
+	move	$sp $fp
+	lw	$ra 0($sp)
+	lw	$s0 4($sp)
+	lw	$fp 8($sp)
+	addiu	$sp $sp 8
+	addiu	$sp $sp 0
+	jr	$ra	
 
 # end of generated code

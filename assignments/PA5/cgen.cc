@@ -1148,7 +1148,7 @@ void CgenClassTable::code_methods()
       env.add_cls_attr(attr);
     }
     auto features = cls->get_features();
-    for (int j = features->first(); features->more(i); i = features->next(i))
+    for (int j = features->first(); features->more(j); j = features->next(j))
     {
       auto feature = features->nth(j);
       method_class *method = dynamic_cast<method_class *>(feature);
