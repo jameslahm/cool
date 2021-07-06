@@ -10,6 +10,11 @@
 
 #include "tree.h"
 #include "cool-tree.handcode.h"
+#include <vector>
+
+class method_class;
+class attr_class;
+class Environment;
 
 // define the class for phylum
 // define simple phylum - Program
@@ -69,7 +74,7 @@ public:
    tree_node *copy() { return copy_Formal(); }
    virtual Formal copy_Formal() = 0;
 
-   Symbol get_name() = 0;
+   virtual Symbol get_name() = 0;
 
 #ifdef Formal_EXTRAS
    Formal_EXTRAS
@@ -176,6 +181,10 @@ public:
    }
    Class_ copy_Class_();
    void dump(ostream &stream, int n);
+   Features get_features()
+   {
+      return features;
+   }
 
 #ifdef Class__SHARED_EXTRAS
    Class__SHARED_EXTRAS
@@ -206,6 +215,11 @@ public:
    void dump(ostream &stream, int n);
 
    void code(ostream &str, Environment &env);
+
+   Symbol get_name()
+   {
+      return name;
+   }
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS
@@ -939,5 +953,93 @@ Expression new_(Symbol);
 Expression isvoid(Expression);
 Expression no_expr();
 Expression object(Symbol);
+
+class Environment
+{
+   Class_ cls;
+   std::vector<attr_class *> cls_attrs;
+   std::vector<Formal> mth_args;
+   std::vector<Symbol> stack_symbols;
+
+public:
+   Class_ get_cls()
+   {
+      return cls;
+   }
+   void set_cls(Class_ cls)
+   {
+      this->cls = cls;
+   }
+
+   int get_cls_attrs_size()
+   {
+      return cls_attrs.size();
+   }
+
+   int get_mth_args_size()
+   {
+      return mth_args.size();
+   }
+
+   void add_cls_attr(attr_class *attr)
+   {
+      cls_attrs.push_back(attr);
+   }
+
+   void add_mth_arg(Formal formal)
+   {
+      mth_args.push_back(formal);
+   }
+
+   void clear_mth_args()
+   {
+      mth_args.clear();
+   }
+
+   void push_stack_symbol(Symbol name)
+   {
+      stack_symbols.push_back(name);
+   }
+   void pop_stack_symbol()
+   {
+      stack_symbols.pop_back();
+   }
+
+   int get_cls_attr_pos(Symbol name)
+   {
+      for (int i = 0; i < int(cls_attrs.size()); i++)
+      {
+         if (cls_attrs[i]->get_name() == name)
+         {
+            return i;
+         }
+      }
+      return -1;
+   }
+
+   int get_let_var_pos_rev(Symbol name)
+   {
+      for (int i = stack_symbols.size() - 1; i >= 0; i--)
+      {
+         if (stack_symbols[i] == name)
+         {
+            return stack_symbols.size() - i - 1;
+         }
+      }
+      return -1;
+   }
+
+   int get_arg_pos(Symbol name)
+   {
+      for (int i = 0; i < int(mth_args.size()); i++)
+      {
+         if (mth_args[i]->get_name() == name)
+         {
+            return i;
+         }
+      }
+      return -1;
+   }
+};
 
 #endif

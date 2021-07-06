@@ -691,7 +691,7 @@ void CgenClassTable::code_constants()
 
 int get_class_tag(Symbol name)
 {
-  for (int i = 0; i < cls_ordered.size(); i++)
+  for (int i = 0; i < int(cls_ordered.size()); i++)
   {
     if (cls_ordered[i]->get_name() == name)
     {
@@ -1074,7 +1074,7 @@ void CgenClassTable::code_prototypes()
 
 void CgenClassTable::code_initializer()
 {
-  for (int i = 0; i < cls_ordered.size(); i++)
+  for (int i = 0; i < int(cls_ordered.size()); i++)
   {
     Class_ cls = cls_ordered[i];
     str << cls->get_name() << CLASSINIT_SUFFIX << LABEL;
@@ -1116,6 +1116,51 @@ void CgenClassTable::code_initializer()
     emit_addiu(SP, SP, 12, str);
 
     emit_return(str);
+  }
+}
+
+bool is_basic_class(Symbol name)
+{
+  if (name == Int || name == Bool || name == Str || name == Object || name == IO)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+void CgenClassTable::code_methods()
+{
+  for (int i = 0; i < int(cls_ordered.size()); i++)
+  {
+    auto cls = cls_ordered[i];
+    Symbol name = cls->get_name();
+    if (is_basic_class(name))
+    {
+      continue;
+    }
+    Environment env;
+    env.set_cls(cls);
+    for (auto attr : cls->all_attrs)
+    {
+      env.add_cls_attr(attr);
+    }
+    auto features = cls->get_features();
+    for (int j = features->first(); features->more(i); i = features->next(i))
+    {
+      auto feature = features->nth(j);
+      method_class *method = dynamic_cast<method_class *>(feature);
+      if (!method)
+      {
+        continue;
+      }
+      else
+      {
+        method->code(str, env);
+      }
+    }
   }
 }
 
@@ -1251,7 +1296,7 @@ void static_dispatch_class::code(ostream &s, Environment &env)
   emit_load_address(T1, (char *)(std::string(type_name->get_string()) + DISPTAB_SUFFIX).c_str(), s);
   Class_ cls = class_map[type_name];
   int i = 0;
-  for (int i = 0; i < cls->all_methods.size(); i++)
+  for (int i = 0; i < int(cls->all_methods.size()); i++)
   {
     if (cls->all_methods[i].second->get_name() == name)
     {
@@ -1270,7 +1315,7 @@ void static_dispatch_class::code(ostream &s, Environment &env)
 void dispatch_class::code(ostream &s, Environment &env)
 {
   int num_params = 0;
-  for (int i = actual->first(); actual->more(i), i = actual->next(i))
+  for (int i = actual->first(); actual->more(i); i = actual->next(i))
   {
     actual->nth(i)->code(s, env);
     emit_push(ACC, s);
@@ -1294,7 +1339,7 @@ void dispatch_class::code(ostream &s, Environment &env)
     cls = class_map[expr->get_type()];
   }
   int i = 0;
-  for (i = 0; i < cls->all_methods.size(); i++)
+  for (i = 0; i < int(cls->all_methods.size()); i++)
   {
     if (cls->all_methods[i].second->get_name() == name)
     {
@@ -1548,17 +1593,57 @@ void lt_class::code(ostream &s, Environment &env)
 
 void eq_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+  env.push_stack_symbol(No_type);
+
+  e2->code(s, env);
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+  emit_load_bool(ACC, BoolConst(1), s);
+  emit_beq(T1, T2, label_num, s);
+  emit_load_bool(ACC, BoolConst(0), s);
+  emit_label_def(label_num++, s);
 }
 
-void leq_class::code(ostream &s)
+void leq_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+  env.push_stack_symbol(No_type);
+
+  e2->code(s, env);
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+
+  emit_load_bool(ACC, BoolConst(1), s);
+  emit_bleq(T1, T2, label_num, s);
+  emit_load_bool(ACC, BoolConst(0), s);
+  emit_label_def(label_num++, s);
 }
 
-void comp_class::code(ostream &s)
+void comp_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_fetch_int(T1, ACC, s);
+  emit_load_bool(ACC, BoolConst(1), s);
+  emit_beq(T1, ZERO, label_num, s);
+  emit_load_bool(ACC, BoolConst(0), s);
+  emit_label_def(label_num++, s);
 }
 
-void int_const_class::code(ostream &s)
+void int_const_class::code(ostream &s, Environment &env)
 {
   //
   // Need to be sure we have an IntEntry *, not an arbitrary Symbol
@@ -1566,28 +1651,113 @@ void int_const_class::code(ostream &s)
   emit_load_int(ACC, inttable.lookup_string(token->get_string()), s);
 }
 
-void string_const_class::code(ostream &s)
+void string_const_class::code(ostream &s, Environment &env)
 {
   emit_load_string(ACC, stringtable.lookup_string(token->get_string()), s);
 }
 
-void bool_const_class::code(ostream &s)
+void bool_const_class::code(ostream &s, Environment &env)
 {
   emit_load_bool(ACC, BoolConst(val), s);
 }
 
-void new__class::code(ostream &s)
+void new__class::code(ostream &s, Environment &env)
 {
+  if (type_name != SELF_TYPE)
+  {
+    emit_load_address(ACC, (char *)(std::string(type_name->get_string()) + PROTOBJ_SUFFIX).c_str(), s);
+    emit_jal("Object.copy", s);
+    emit_jal((char *)(std::string(type_name->get_string()) + CLASSINIT_SUFFIX).c_str(), s);
+    return;
+  }
+
+  emit_load_address(T1, CLASSOBJTAB, s);
+  // t2 = self.tag
+  emit_load(T2, 0, SELF, s);
+
+  // t2 = offset
+  emit_load_imm(T3, 8, s);
+  emit_mul(T2, T3, T2, s);
+
+  emit_add(T2, T2, T1, s);
+
+  emit_load(T1, 0, T2, s);
+  emit_push(T1, s);
+  env.push_stack_symbol(No_type);
+  emit_move(ACC, T1, s);
+
+  emit_jal("Object.copy", s);
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+
+  emit_load(T1, 1, T1, s);
+  emit_jalr(T1, s);
 }
 
-void isvoid_class::code(ostream &s)
+void isvoid_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_move(T1, ACC, s);
+  emit_load_bool(ACC, BoolConst(1), s);
+  emit_beq(T1, ZERO, label_num, s);
+  emit_load_bool(ACC, BoolConst(0), s);
+  emit_label_def(label_num++, s);
 }
 
-void no_expr_class::code(ostream &s)
+void no_expr_class::code(ostream &s, Environment &env)
 {
+  emit_move(ACC, ZERO, s);
 }
 
-void object_class::code(ostream &s)
+void object_class::code(ostream &s, Environment &env)
 {
+  int pos;
+  pos = env.get_let_var_pos_rev(name);
+  if (pos != -1)
+  {
+    emit_load(ACC, pos + 1, SP, s);
+    return;
+  }
+  pos = env.get_arg_pos(name);
+  if (pos != -1)
+  {
+    emit_load(ACC, 2 + env.get_mth_args_size() - pos, FP, s);
+    return;
+  }
+  pos = env.get_cls_attr_pos(name);
+  if (pos != -1)
+  {
+    emit_load(ACC, pos + DEFAULT_OBJFIELDS, SELF, s);
+    return;
+  }
+  emit_move(ACC, SELF, s);
+}
+
+void method_class::code(ostream &s, Environment &env)
+{
+  emit_method_ref(env.get_cls()->get_name(), name, s);
+  s << LABEL;
+  emit_addiu(SP, SP, -12, s);
+  emit_store(FP, 3, SP, s);
+  emit_store(SELF, 2, SP, s);
+  emit_store(RA, 1, SP, s);
+  emit_addiu(FP, SP, 4, s);
+  emit_move(SELF, ACC, s);
+
+  for (int i = formals->first(); formals->more(i); i = formals->next(i))
+  {
+    auto formal = formals->nth(i);
+    env.add_mth_arg(formal);
+  }
+
+  expr->code(s, env);
+
+  emit_move(SP, FP, s);
+  emit_load(RA, 0, SP, s);
+  emit_load(SELF, 1, SP, s);
+  emit_load(FP, 2, SP, s);
+  emit_addiu(SP, SP, 8, s);
+  emit_addiu(SP, SP, env.get_mth_args_size() * 4, s);
+  env.clear_mth_args();
+  emit_return(s);
 }
