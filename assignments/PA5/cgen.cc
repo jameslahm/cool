@@ -1289,7 +1289,7 @@ void dispatch_class::code(ostream &s, Environment &env)
   emit_label_def(label_num++, s);
   emit_load(T1, 2, SELF, s);
   Class_ cls = env.get_cls();
-  if (expr->get_type() != SELF)
+  if (expr->get_type() != SELF_TYPE)
   {
     cls = class_map[expr->get_type()];
   }
@@ -1309,51 +1309,244 @@ void dispatch_class::code(ostream &s, Environment &env)
   }
 }
 
-void cond_class::code(ostream &s)
+void cond_class::code(ostream &s, Environment &env)
 {
+  pred->code(s, env);
+  emit_fetch_int(T1, ACC, s);
+
+  int label_false = label_num++;
+  int label_end = label_num++;
+
+  emit_beq(T1, ZERO, label_false, s);
+  then_exp->code(s, env);
+  emit_branch(label_end, s);
+
+  emit_label_def(label_false, s);
+  else_exp->code(s, env);
+
+  emit_label_def(label_end, s);
 }
 
-void loop_class::code(ostream &s)
+void loop_class::code(ostream &s, Environment &env)
 {
+  int label_loop = label_num++;
+  int label_exit = label_num++;
+  emit_label_def(label_loop, s);
+
+  pred->code(s, env);
+  emit_fetch_int(T1, ACC, s);
+  emit_beq(T1, ZERO, label_exit, s);
+  body->code(s, env);
+  emit_branch(label_loop, s);
+  emit_label_def(label_exit, s);
+  emit_move(ACC, ZERO, s);
 }
 
-void typcase_class::code(ostream &s)
+void typcase_class::code(ostream &s, Environment &env)
 {
+  expr->code(s, env);
+  emit_push(ACC, s);
+
+  emit_bne(ACC, ZERO, label_num, s);
+  emit_partial_load_address(ACC, s);
+  stringtable.lookup_string(env.get_cls()->get_name()->get_string())->code_ref(s);
+  s << endl;
+  emit_load_imm(T1, get_line_number(), s);
+  emit_jal("_case_abort2", s);
+  emit_label_def(label_num++, s);
+  int label_begin = label_num++;
+  int label_end = label_num++;
+  int label_tag_is_valid = label_num++;
+
+  emit_load(T1, TAG_OFFSET, ACC, s);
+
+  emit_label_def(label_begin, s);
+  emit_load_imm(T2, INVALID_CLASSTAG, s);
+  emit_bne(T1, T2, label_tag_is_valid, s);
+  emit_jal("_case_abort", s);
+
+  emit_label_def(label_tag_is_valid, s);
+  int label_branch_0 = label_num;
+  for (int i = cases->first(); cases->more(i); i = cases->next(i))
+  {
+    emit_load_imm(T2, get_class_tag(cases->nth(i)->get_type_decl()), s);
+    emit_beq(T2, T1, label_num++, s);
+  }
+  emit_load_address(T2, CLASSPARENTTAB, s);
+  emit_load_imm(T3, 4, s);
+  emit_mul(T3, T3, T1, s);
+  emit_add(T2, T2, T3, s);
+  emit_load(T1, 0, T2, s);
+  emit_branch(label_begin, s);
+
+  for (int i = cases->first(); cases->more(i); i = cases->next(i))
+  {
+    emit_label_def(label_branch_0++, s);
+    auto c = cases->nth(i);
+    env.push_stack_symbol(c->get_name());
+    c->get_expr()->code(s, env);
+    env.pop_stack_symbol();
+    emit_branch(label_end, s);
+  }
+  emit_label_def(label_end, s);
+  emit_addiu(SP, SP, 4, s);
 }
 
-void block_class::code(ostream &s)
+void block_class::code(ostream &s, Environment &env)
 {
+  for (int i = body->first(); body->more(i); i = body->next(i))
+  {
+    body->nth(i)->code(s, env);
+  }
 }
 
-void let_class::code(ostream &s)
+void let_class::code(ostream &s, Environment &env)
 {
+  init->code(s, env);
+  if (init->is_empty())
+  {
+    if (type_decl == Str)
+    {
+      emit_load_string(ACC, stringtable.lookup_string(""), s);
+    }
+    else if (type_decl == Int)
+    {
+      emit_load_int(ACC, inttable.lookup_string("0"), s);
+    }
+    else if (type_decl == Bool)
+    {
+      emit_load_bool(ACC, BoolConst(0), s);
+    }
+    else
+    {
+      emit_move(ACC, ZERO, s);
+    }
+  }
+  emit_push(ACC, s);
+  env.push_stack_symbol(identifier);
+  body->code(s, env);
+  emit_addiu(SP, SP, 4, s);
+  env.pop_stack_symbol();
 }
 
-void plus_class::code(ostream &s)
+void plus_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+  env.push_stack_symbol(No_type);
+  e2->code(s, env);
+  emit_jal("Object.copy", s);
+
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+  emit_add(T1, T1, T2, s);
+
+  emit_store(T1, 3, ACC, s);
 }
 
-void sub_class::code(ostream &s)
+void sub_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+  env.push_stack_symbol(No_type);
+
+  e2->code(s, env);
+  emit_jal("Object.copy", s);
+
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+  emit_sub(T1, T1, T2, s);
+
+  emit_store(T1, 3, ACC, s);
 }
 
-void mul_class::code(ostream &s)
+void mul_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+  env.push_stack_symbol(No_type);
+  e2->code(s, env);
+
+  emit_jal("Object.copy", s);
+
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+  emit_mul(T1, T1, T2, s);
+
+  emit_store(T1, 3, ACC, s);
 }
 
-void divide_class::code(ostream &s)
+void divide_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+  env.push_stack_symbol(No_type);
+
+  e2->code(s, env);
+  emit_jal("Object.copy", s);
+
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+
+  emit_div(T1, T1, T2, s);
+  emit_store(T1, 3, ACC, s);
 }
 
-void neg_class::code(ostream &s)
+void neg_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_jal("Object.copy", s);
+
+  emit_fetch_int(T1, ACC, s);
+  emit_neg(T1, T1, s);
+  emit_store(T1, 3, ACC, s);
 }
 
-void lt_class::code(ostream &s)
+void lt_class::code(ostream &s, Environment &env)
 {
+  e1->code(s, env);
+  emit_push(ACC, s);
+
+  env.push_stack_symbol(No_type);
+  e2->code(s, env);
+  emit_addiu(SP, SP, 4, s);
+  emit_load(T1, 0, SP, s);
+  env.pop_stack_symbol();
+
+  emit_move(T2, ACC, s);
+  emit_fetch_int(T1, T1, s);
+  emit_fetch_int(T2, T2, s);
+  emit_load_bool(ACC, BoolConst(1), s);
+  emit_blt(T1, T2, label_num, s);
+  emit_load_bool(ACC, BoolConst(0), s);
+  emit_label_def(label_num++, s);
 }
 
-void eq_class::code(ostream &s)
+void eq_class::code(ostream &s, Environment &env)
 {
 }
 
