@@ -30,8 +30,12 @@
 extern void emit_string_constant(ostream &str, char *s);
 extern int cgen_debug;
 
+#define DISPATH_ABORT "_dispatch_abort"
+
 std::map<Symbol, Class_> class_map;
 std::vector<Class_> cls_ordered;
+
+int label_num = 0;
 
 //
 // Three symbols from the semantic analyzer (semant.cc) are used.
@@ -1182,16 +1186,127 @@ CgenNode::CgenNode(Class_ nd, Basicness bstatus, CgenClassTableP ct) : class__cl
 //
 //*****************************************************************
 
-void assign_class::code(ostream &s)
+void assign_class::code(ostream &s, Environment &env)
 {
+  expr->code(s, env);
+  int pos, offset;
+  pos = env.get_let_var_pos_rev(name);
+  if (pos != -1)
+  {
+    offset = pos + 1;
+    emit_store(ACC, offset, SP, s);
+    if (cgen_Memmgr == GC_GENGC)
+    {
+      emit_addiu(A1, SP, 4 * offset, s);
+      emit_gc_assign(s);
+    }
+  }
+
+  pos = env.get_arg_pos(name);
+  if (pos != -1)
+  {
+    offset = 2 + env.get_mth_args_size() - pos;
+    emit_store(ACC, offset, FP, s);
+    if (cgen_Memmgr == GC_GENGC)
+    {
+      emit_addiu(A1, FP, offset * 4, s);
+      emit_gc_assign(s);
+    }
+    return;
+  }
+
+  pos = env.get_cls_attr_pos(name);
+  if (pos != -1)
+  {
+    offset = DEFAULT_OBJFIELDS + pos;
+    emit_store(ACC, offset, SELF, s);
+    if (cgen_Memmgr == GC_GENGC)
+    {
+      emit_addiu(A1, SELF, offset * 4, s);
+      emit_gc_assign(s);
+    }
+    return;
+  }
 }
 
-void static_dispatch_class::code(ostream &s)
+void static_dispatch_class::code(ostream &s, Environment &env)
 {
+  int num_params = 0;
+  for (int i = actual->first(); actual->more(i); i = actual->next(i))
+  {
+    actual->nth(i)->code(s, env);
+    emit_push(ACC, s);
+    env.push_stack_symbol(No_type);
+    num_params++;
+  }
+  expr->code(s, env);
+
+  emit_bne(ACC, ZERO, label_num, s);
+  emit_partial_load_address(ACC, s);
+  stringtable.lookup_string(env.get_cls()->get_filename()->get_string())->code_ref(s);
+  s << endl;
+  emit_load_imm(T1, get_line_number(), s);
+  emit_jal(DISPATH_ABORT, s);
+  emit_label_def(label_num++, s);
+  emit_load_address(T1, (char *)(std::string(type_name->get_string()) + DISPTAB_SUFFIX).c_str(), s);
+  Class_ cls = class_map[type_name];
+  int i = 0;
+  for (int i = 0; i < cls->all_methods.size(); i++)
+  {
+    if (cls->all_methods[i].second->get_name() == name)
+    {
+      break;
+    }
+  }
+  emit_load(T1, i, T1, s);
+  emit_jalr(T1, s);
+
+  for (int i = 0; i < num_params; i++)
+  {
+    env.pop_stack_symbol();
+  }
 }
 
-void dispatch_class::code(ostream &s)
+void dispatch_class::code(ostream &s, Environment &env)
 {
+  int num_params = 0;
+  for (int i = actual->first(); actual->more(i), i = actual->next(i))
+  {
+    actual->nth(i)->code(s, env);
+    emit_push(ACC, s);
+    env.push_stack_symbol(No_type);
+    num_params++;
+  }
+
+  expr->code(s, env);
+  emit_bne(ACC, ZERO, label_num, s);
+  emit_partial_load_address(ACC, s);
+  stringtable.lookup_string(env.get_cls()->get_name()->get_string())->code_ref(s);
+  s << endl;
+  emit_load_imm(T1, get_line_number(), s);
+  emit_jal(DISPATH_ABORT, s);
+
+  emit_label_def(label_num++, s);
+  emit_load(T1, 2, SELF, s);
+  Class_ cls = env.get_cls();
+  if (expr->get_type() != SELF)
+  {
+    cls = class_map[expr->get_type()];
+  }
+  int i = 0;
+  for (i = 0; i < cls->all_methods.size(); i++)
+  {
+    if (cls->all_methods[i].second->get_name() == name)
+    {
+      break;
+    }
+  }
+  emit_load(T1, i, T1, s);
+  emit_jalr(T1, s);
+  for (int i = 0; i < num_params; i++)
+  {
+    env.pop_stack_symbol();
+  }
 }
 
 void cond_class::code(ostream &s)

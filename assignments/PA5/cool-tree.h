@@ -54,7 +54,7 @@ public:
    virtual Feature copy_Feature() = 0;
 
    virtual Symbol get_name() = 0;
-`
+
 #ifdef Feature_EXTRAS
    Feature_EXTRAS
 #endif
@@ -68,6 +68,8 @@ class Formal_class : public tree_node
 public:
    tree_node *copy() { return copy_Formal(); }
    virtual Formal copy_Formal() = 0;
+
+   Symbol get_name() = 0;
 
 #ifdef Formal_EXTRAS
    Formal_EXTRAS
@@ -265,6 +267,11 @@ public:
    }
    Formal copy_Formal();
    void dump(ostream &stream, int n);
+
+   Symbol get_name()
+   {
+      return name;
+   }
 
 #ifdef Formal_SHARED_EXTRAS
    Formal_SHARED_EXTRAS

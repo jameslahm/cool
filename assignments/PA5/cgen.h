@@ -155,4 +155,28 @@ public:
       }
       return -1;
    }
+
+   int get_let_var_pos_rev(Symbol name)
+   {
+      for (int i = stack_symbols.size() - 1; i >= 0; i--)
+      {
+         if (stack_symbols[i] == name)
+         {
+            return stack_symbols.size() - i - 1;
+         }
+      }
+      return -1;
+   }
+
+   int get_arg_pos(Symbol name)
+   {
+      for (int i = 0; i < mth_args.size(); i++)
+      {
+         if (mth_args[i]->get_name() == name)
+         {
+            return i;
+         }
+      }
+      return -1;
+   }
 };
